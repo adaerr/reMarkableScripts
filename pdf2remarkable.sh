@@ -151,4 +151,6 @@ scp -r ${tmpdir}/* ${xochitldir}
 rm -rf ${tmpdir}/*
 done
 
+ssh -t remarkable "systemctl restart xochitl"
+
 rm -rf ${tmpdir}
