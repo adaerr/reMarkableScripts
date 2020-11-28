@@ -60,7 +60,9 @@
 # - imagemagick (or graphicsmagick)
 
 # This is where ssh will try to copy the files associated with the document
-xochitldir=remarkable:.local/share/remarkable/xochitl/
+REMARKABLE_HOST=${REMARKABLE_HOST:-remarkable}
+REMARKABLE_XOCHITL_DIR=${REMARKABLE_XOCHITL_DIR:-.local/share/remarkable/xochitl/}
+TARGET_DIR="${REMARKABLE_HOST}:${REMARKABLE_XOCHITL_DIR}"
 
 # Check if we have something to do
 if [ $# -lt 1 ]; then
@@ -146,8 +148,8 @@ mkdir ${tmpdir}/${uuid}.thumbnails
 convert -density 300 $pdfname'[0]' -colorspace Gray -separate -average -shave 5%x5% -resize 280x374 ${tmpdir}/${uuid}.thumbnails/0.jpg
 
 # Transfer files
-echo "Transferring $pdfname$ as $uuid$"
-scp -r ${tmpdir}/* ${xochitldir}
+echo "Transferring $pdfname as $uuid"
+scp -r ${tmpdir}/* "${TARGET_DIR}"
 rm -rf ${tmpdir}/*
 done
 
