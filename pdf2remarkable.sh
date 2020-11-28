@@ -1,4 +1,4 @@
-#!/usr/bin/zsh
+#!/bin/sh
 # Transfer PDF file(s) to a reMarkable
 # Adrian Daerr 2017/2018 - public domain
 #
