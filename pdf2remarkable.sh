@@ -67,8 +67,20 @@ TARGET_DIR="${REMARKABLE_HOST}:${REMARKABLE_XOCHITL_DIR}"
 # Check if we have something to do
 if [ $# -lt 1 ]; then
     echo "Transfer PDF document to a reMarkable tablet"
-    echo "usage: $(basename $0) path-to-pdf-file [path-to-pdf-file]..."
+    echo "usage: $(basename $0) [ -r ] path-to-pdf-file [path-to-pdf-file]..."
     exit 1
+fi
+
+RESTART_XOCHITL_DEFAULT=${RESTART_XOCHITL_DEFAULT:-0}
+RESTART_XOCHITL=${RESTART_XOCHITL_DEFAULT}
+if [ $1 == "-r" ] ; then
+    shift
+    if [ $RESTART_XOCHITL_DEFAULT == 0 ] ; then
+        echo Switching
+        RESTART_XOCHITL=1
+    else
+        RESTART_XOCHITL=0
+    fi
 fi
 
 # Create directory where we prepare the files as the reMarkable expects them
@@ -154,3 +166,9 @@ rm -rf ${tmpdir}/*
 done
 
 rm -rf ${tmpdir}
+
+if [ $RESTART_XOCHITL -eq 1 ] ; then
+    echo "Restarting Xochitl..."
+    ssh ${REMARKABLE_HOST} "systemctl restart xochitl"
+    echo "Done."
+fi
