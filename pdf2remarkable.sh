@@ -1,4 +1,4 @@
-#!/usr/bin/zsh
+#!/bin/sh
 # Transfer PDF file(s) to a reMarkable
 # Adrian Daerr 2017/2018 - public domain
 #
@@ -60,13 +60,27 @@
 # - imagemagick (or graphicsmagick)
 
 # This is where ssh will try to copy the files associated with the document
-xochitldir=remarkable:.local/share/remarkable/xochitl/
+REMARKABLE_HOST=${REMARKABLE_HOST:-remarkable}
+REMARKABLE_XOCHITL_DIR=${REMARKABLE_XOCHITL_DIR:-.local/share/remarkable/xochitl/}
+TARGET_DIR="${REMARKABLE_HOST}:${REMARKABLE_XOCHITL_DIR}"
 
 # Check if we have something to do
 if [ $# -lt 1 ]; then
     echo "Transfer PDF document to a reMarkable tablet"
-    echo "usage: $(basename $0) path-to-pdf-file [path-to-pdf-file]..."
+    echo "usage: $(basename $0) [ -r ] path-to-pdf-file [path-to-pdf-file]..."
     exit 1
+fi
+
+RESTART_XOCHITL_DEFAULT=${RESTART_XOCHITL_DEFAULT:-0}
+RESTART_XOCHITL=${RESTART_XOCHITL_DEFAULT}
+if [ $1 == "-r" ] ; then
+    shift
+    if [ $RESTART_XOCHITL_DEFAULT == 0 ] ; then
+        echo Switching
+        RESTART_XOCHITL=1
+    else
+        RESTART_XOCHITL=0
+    fi
 fi
 
 # Create directory where we prepare the files as the reMarkable expects them
@@ -76,16 +90,16 @@ tmpdir=$(mktemp -d)
 # which we expect are paths to the PDF files to be transfered
 for pdfname in $@ ; do
 
-# reMarkable documents appear to be identified by universally unique IDs (UUID),
-# so we generate one for the document at hand
-uuid=$(uuidgen)
+    # reMarkable documents appear to be identified by universally unique IDs (UUID),
+    # so we generate one for the document at hand
+    uuid=$(uuidgen)
 
-# Copy the PDF file itself
-cp $pdfname ${tmpdir}/${uuid}.pdf
+    # Copy the PDF file itself
+    cp $pdfname ${tmpdir}/${uuid}.pdf
 
-# Add metadata
-# The lastModified item appears to contain the date in milliseconds since Epoch
-cat <<EOF >>${tmpdir}/${uuid}.metadata
+    # Add metadata
+    # The lastModified item appears to contain the date in milliseconds since Epoch
+    cat <<EOF >>${tmpdir}/${uuid}.metadata
 {   
     "deleted": false,
     "lastModified": "$(date +%s)000",
@@ -100,8 +114,8 @@ cat <<EOF >>${tmpdir}/${uuid}.metadata
 }
 EOF
 
-# Add content information
-cat <<EOF >${tmpdir}/${uuid}.content
+    # Add content information
+    cat <<EOF >${tmpdir}/${uuid}.content
 {   
     "extraMetadata": {
     },
@@ -126,29 +140,40 @@ cat <<EOF >${tmpdir}/${uuid}.content
 }
 EOF
 
-# Add cache directory
-mkdir ${tmpdir}/${uuid}.cache
+    # Add cache directory
+    mkdir ${tmpdir}/${uuid}.cache
 
-# Add highlights directory
-mkdir ${tmpdir}/${uuid}.highlights
+    # Add highlights directory
+    mkdir ${tmpdir}/${uuid}.highlights
 
-# Add thumbnails directory
-mkdir ${tmpdir}/${uuid}.thumbnails
+    # Add thumbnails directory
+    mkdir ${tmpdir}/${uuid}.thumbnails
 
-# Generate preview thumbnail for the first page
-# Different sizes were found (possibly depending on whether created by
-# the reMarkable itself or some synchronization app?): 280x374 or
-# 362x512 pixels. In any case the thumbnails appear to be baseline
-# jpeg images - JFIF standard 1.01, resolution (DPI), density 228x228
-# or 72x72, segment length 16, precision 8, frames 3
-#
-# The following will look nice only for PDFs that are higher than about 32mm.
-convert -density 300 $pdfname'[0]' -colorspace Gray -separate -average -shave 5%x5% -resize 280x374 ${tmpdir}/${uuid}.thumbnails/0.jpg
+    # Generate preview thumbnail for the first page
+    # Different sizes were found (possibly depending on whether created by
+    # the reMarkable itself or some synchronization app?): 280x374 or
+    # 362x512 pixels. In any case the thumbnails appear to be baseline
+    # jpeg images - JFIF standard 1.01, resolution (DPI), density 228x228
+    # or 72x72, segment length 16, precision 8, frames 3
+    #
+    # The following will look nice only for PDFs that are higher than about 32mm.
+    convert -density 300 $pdfname'[0]' \
+            -colorspace Gray \
+            -separate -average \
+            -shave 5%x5% \
+            -resize 280x374 \
+            ${tmpdir}/${uuid}.thumbnails/0.jpg
 
-# Transfer files
-echo "Transferring $pdfname$ as $uuid$"
-scp -r ${tmpdir}/* ${xochitldir}
-rm -rf ${tmpdir}/*
+    # Transfer files
+    echo "Transferring $pdfname as $uuid"
+    scp -r ${tmpdir}/* "${TARGET_DIR}"
+    rm -rf ${tmpdir}/*
 done
 
 rm -rf ${tmpdir}
+
+if [ $RESTART_XOCHITL -eq 1 ] ; then
+    echo "Restarting Xochitl..."
+    ssh ${REMARKABLE_HOST} "systemctl restart xochitl"
+    echo "Done."
+fi
