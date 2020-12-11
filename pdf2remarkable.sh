@@ -73,7 +73,7 @@ fi
 
 RESTART_XOCHITL_DEFAULT=${RESTART_XOCHITL_DEFAULT:-0}
 RESTART_XOCHITL=${RESTART_XOCHITL_DEFAULT}
-if [ $1 == "-r" ] ; then
+if [ "$1" == "-r" ] ; then
     shift
     if [ $RESTART_XOCHITL_DEFAULT == 0 ] ; then
         echo Switching
@@ -87,15 +87,15 @@ fi
 tmpdir=$(mktemp -d)
 
 # Loop over the command line arguments,
-# which we expect are paths to the PDF files to be transfered
-for pdfname in $@ ; do
+# which we expect are paths to the PDF files to be transferred
+for pdfname in "$@" ; do
 
     # reMarkable documents appear to be identified by universally unique IDs (UUID),
     # so we generate one for the document at hand
     uuid=$(uuidgen)
 
     # Copy the PDF file itself
-    cp $pdfname ${tmpdir}/${uuid}.pdf
+    cp "$pdfname" ${tmpdir}/${uuid}.pdf
 
     # Add metadata
     # The lastModified item appears to contain the date in milliseconds since Epoch
@@ -110,7 +110,7 @@ for pdfname in $@ ; do
     "synced": false,
     "type": "DocumentType",
     "version": 1,
-    "visibleName": "$(basename $pdfname .pdf)"
+    "visibleName": "$(basename "$pdfname" .pdf)"
 }
 EOF
 
@@ -157,7 +157,7 @@ EOF
     # or 72x72, segment length 16, precision 8, frames 3
     #
     # The following will look nice only for PDFs that are higher than about 32mm.
-    convert -density 300 $pdfname'[0]' \
+    convert -density 300 "$pdfname"'[0]' \
             -colorspace Gray \
             -separate -average \
             -shave 5%x5% \
