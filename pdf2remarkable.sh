@@ -73,9 +73,9 @@ fi
 
 RESTART_XOCHITL_DEFAULT=${RESTART_XOCHITL_DEFAULT:-0}
 RESTART_XOCHITL=${RESTART_XOCHITL_DEFAULT}
-if [ "$1" == "-r" ] ; then
+if [ "$1" = "-r" ] ; then
     shift
-    if [ $RESTART_XOCHITL_DEFAULT == 0 ] ; then
+    if [ $RESTART_XOCHITL_DEFAULT -eq 0 ] ; then
         echo Switching
         RESTART_XOCHITL=1
     else
