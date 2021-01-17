@@ -95,7 +95,7 @@ for pdfname in "$@" ; do
     uuid=$(uuidgen)
 
     # Copy the PDF file itself
-    cp "$pdfname" ${tmpdir}/${uuid}.pdf
+    cp -- "$pdfname" ${tmpdir}/${uuid}.pdf
 
     # Add metadata
     # The lastModified item appears to contain the date in milliseconds since Epoch
@@ -110,7 +110,7 @@ for pdfname in "$@" ; do
     "synced": false,
     "type": "DocumentType",
     "version": 1,
-    "visibleName": "$(basename "$pdfname" .pdf)"
+    "visibleName": "$(basename -- "$pdfname" .pdf)"
 }
 EOF
 
