@@ -149,21 +149,6 @@ EOF
     # Add thumbnails directory
     mkdir ${tmpdir}/${uuid}.thumbnails
 
-    # Generate preview thumbnail for the first page
-    # Different sizes were found (possibly depending on whether created by
-    # the reMarkable itself or some synchronization app?): 280x374 or
-    # 362x512 pixels. In any case the thumbnails appear to be baseline
-    # jpeg images - JFIF standard 1.01, resolution (DPI), density 228x228
-    # or 72x72, segment length 16, precision 8, frames 3
-    #
-    # The following will look nice only for PDFs that are higher than about 32mm.
-    convert -density 300 "$pdfname"'[0]' \
-            -colorspace Gray \
-            -separate -average \
-            -shave 5%x5% \
-            -resize 280x374 \
-            ${tmpdir}/${uuid}.thumbnails/0.jpg
-
     # Transfer files
     echo "Transferring $pdfname as $uuid"
     scp -r ${tmpdir}/* "${TARGET_DIR}"
