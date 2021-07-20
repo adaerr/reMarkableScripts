@@ -65,7 +65,7 @@ TARGET_DIR="${REMARKABLE_HOST}:${REMARKABLE_XOCHITL_DIR}"
 
 # Check if we have something to do
 if [ $# -lt 1 ]; then
-    echo "Transfer PDF document to a reMarkable tablet"
+    echo "Transfer PDF or Epub document to a reMarkable tablet"
     echo "usage: $(basename $0) [ -r ] path-to-pdf-file [path-to-pdf-file]..."
     exit 1
 fi
@@ -87,14 +87,16 @@ tmpdir=$(mktemp -d)
 
 # Loop over the command line arguments,
 # which we expect are paths to the PDF files to be transferred
-for pdfname in "$@" ; do
+for filename in "$@" ; do
 
     # reMarkable documents appear to be identified by universally unique IDs (UUID),
     # so we generate one for the document at hand
     uuid=$(uuidgen)
 
-    # Copy the PDF file itself
-    cp -- "$pdfname" ${tmpdir}/${uuid}.pdf
+	extension="${filename##*.}"
+
+    # Copy the file itself
+    cp -- "$filename" "${tmpdir}/${uuid}.${extension}"
 
     # Add metadata
     # The lastModified item appears to contain the date in milliseconds since Epoch
@@ -109,12 +111,13 @@ for pdfname in "$@" ; do
     "synced": false,
     "type": "DocumentType",
     "version": 1,
-    "visibleName": "$(basename -- "$pdfname" .pdf)"
+    "visibleName": "$(basename -- "$filename" ".$extension")"
 }
 EOF
 
-    # Add content information
-    cat <<EOF >${tmpdir}/${uuid}.content
+	if [ "$extension" = "pdf" ]; then
+		# Add content information
+		cat <<EOF >${tmpdir}/${uuid}.content
 {   
     "extraMetadata": {
     },
@@ -138,18 +141,31 @@ EOF
     }
 }
 EOF
+		# Add cache directory
+		mkdir ${tmpdir}/${uuid}.cache
 
-    # Add cache directory
-    mkdir ${tmpdir}/${uuid}.cache
+		# Add highlights directory
+		mkdir ${tmpdir}/${uuid}.highlights
 
-    # Add highlights directory
-    mkdir ${tmpdir}/${uuid}.highlights
+		# Add thumbnails directory
+		mkdir ${tmpdir}/${uuid}.thumbnails
 
-    # Add thumbnails directory
-    mkdir ${tmpdir}/${uuid}.thumbnails
+	elif [ "$extension" == "epub" ]; then
+
+		# Add content information
+		cat <<EOF >${tmpdir}/${uuid}.content
+{
+    "fileType": "epub"
+}
+EOF
+	else
+		echo "Unknown extension: $extension, skipping $filename"
+    rm -rf ${tmpdir}/*
+		continue
+	fi
 
     # Transfer files
-    echo "Transferring $pdfname as $uuid"
+    echo "Transferring $filename as $uuid"
     scp -r ${tmpdir}/* "${TARGET_DIR}"
     rm -rf ${tmpdir}/*
 done
