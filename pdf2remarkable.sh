@@ -57,7 +57,6 @@
 # * Beyond core utilities (date, basename,...), the following software
 #   has to be installed on the host computer:
 # - uuidgen
-# - imagemagick (or graphicsmagick)
 
 # This is where ssh will try to copy the files associated with the document
 REMARKABLE_HOST=${REMARKABLE_HOST:-remarkable}
