@@ -150,7 +150,7 @@ EOF
 		# Add thumbnails directory
 		mkdir ${tmpdir}/${uuid}.thumbnails
 
-	elif [ "$extension" == "epub" ]; then
+	elif [ "$extension" = "epub" ]; then
 
 		# Add content information
 		cat <<EOF >${tmpdir}/${uuid}.content
