@@ -1,17 +1,19 @@
 #!/bin/sh
-# Transfer PDF file(s) to a reMarkable
+# Transfer PDF and EPUB file(s) to a reMarkable
 # Adrian Daerr and contributors, 2017 -- 2022 - public domain
+# https://github.com/adaerr/reMarkableScripts
 #
 # - The files will appear in reMarkable's top-level "My Files" directory,
 # - After finishing all transfers, you have to restart the xochitl
 #   service on the tablet in order to force a scan of its document
-#   directory ${xochitldir} (so that you see the newly transferred
-#   files), e.g. by sending the tablet the following command: 
+#   directory ${REMARKABLE_XOCHITL_DIR} (so that you see the newly
+#   transferred files), e.g. by sending the tablet the following
+#   command:
 #     ssh remarkable systemctl restart xochitl
-#   This script can do that for you at the end, either by default (set
-#   environment variable RESTART_XOCHITL_DEFAULT to 1) or once when
-#   given the command line parameter "-r".
-# - See more instructions and configuration options below
+#   This script will do that for you at the end if you
+#   (set the environment variable RESTART_XOCHITL_DEFAULT to 1)
+#   xor (specify "-r" as first command line parameter).
+# - See list of prerequisites, and more environment variables below.
 #
 # Disclaimer and liability limitation:
 # [see also all-caps text borrowed from GPL below]
@@ -49,18 +51,19 @@
 #
 # Prerequisites:
 #
-# * The ssh access has to be configured under the host alias 'remarkable',
-# e.g. by putting the following in .ssh/config :
-# | host remarkable
-# |        Hostname 10.11.99.1
-# |        User root
-# |        ForwardX11 no
-# |        ForwardAgent no
-# See also the variable "xochitldir" below
+# * The ssh access has to be configured under the host alias 'remarkable'
+#   (or another alias specified in the env variable REMARKABLE_HOST),
+#   e.g. by putting the following in .ssh/config :
+#   | host remarkable
+#   |        Hostname 10.11.99.1
+#   |        User root
+#   |        ForwardX11 no
+#   |        ForwardAgent no
+#   (and setup ssh public key authentication to avoid typing your passwd)
 #
 # * Beyond core utilities (date, basename,...), the following software
 #   has to be installed on the host computer:
-# - uuidgen
+#   - uuidgen
 
 # This is where ssh will try to copy the files associated with the document
 REMARKABLE_HOST=${REMARKABLE_HOST:-remarkable}
@@ -69,8 +72,9 @@ TARGET_DIR="${REMARKABLE_HOST}:${REMARKABLE_XOCHITL_DIR}"
 
 # Check if we have something to do
 if [ $# -lt 1 ]; then
-    echo "Transfer PDF or Epub document to a reMarkable tablet"
-    echo "usage: $(basename $0) [ -r ] path-to-pdf-file [path-to-pdf-file]..."
+    echo "Transfer PDF or EPUB document(s) to a reMarkable tablet."
+    echo "See comments/documentation at start of script."
+    echo "usage: $(basename $0) [ -r ] path-to-file [path-to-file]..."
     exit 1
 fi
 
@@ -90,7 +94,7 @@ fi
 tmpdir=$(mktemp -d)
 
 # Loop over the command line arguments,
-# which we expect are paths to the PDF files to be transferred
+# which we expect are paths to the files to be transferred
 for filename in "$@" ; do
 
     # reMarkable documents appear to be identified by universally unique IDs (UUID),
