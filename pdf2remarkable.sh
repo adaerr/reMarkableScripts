@@ -95,7 +95,7 @@ for filename in "$@" ; do
 
     # reMarkable documents appear to be identified by universally unique IDs (UUID),
     # so we generate one for the document at hand
-    uuid=$(uuidgen)
+    uuid=$(uuidgen | tr '[:upper:]' '[:lower:]')
 
     extension="${filename##*.}"
 
