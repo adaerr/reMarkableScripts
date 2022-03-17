@@ -1,6 +1,6 @@
 #!/bin/sh
 # Transfer PDF file(s) to a reMarkable
-# Adrian Daerr 2017/2018 - public domain
+# Adrian Daerr and contributors, 2017 -- 2022 - public domain
 #
 # - The files will appear in reMarkable's top-level "My Files" directory,
 # - After finishing all transfers, you have to restart the xochitl
@@ -8,6 +8,10 @@
 #   directory ${xochitldir} (so that you see the newly transferred
 #   files), e.g. by sending the tablet the following command: 
 #     ssh remarkable systemctl restart xochitl
+#   This script can do that for you at the end, either by default (set
+#   environment variable RESTART_XOCHITL_DEFAULT to 1) or once when
+#   given the command line parameter "-r".
+# - See more instructions and configuration options below
 #
 # Disclaimer and liability limitation:
 # [see also all-caps text borrowed from GPL below]
@@ -93,7 +97,7 @@ for filename in "$@" ; do
     # so we generate one for the document at hand
     uuid=$(uuidgen)
 
-	extension="${filename##*.}"
+    extension="${filename##*.}"
 
     # Copy the file itself
     cp -- "$filename" "${tmpdir}/${uuid}.${extension}"
@@ -101,7 +105,7 @@ for filename in "$@" ; do
     # Add metadata
     # The lastModified item appears to contain the date in milliseconds since Epoch
     cat <<EOF >>${tmpdir}/${uuid}.metadata
-{   
+{
     "deleted": false,
     "lastModified": "$(date +%s)000",
     "metadatamodified": false,
@@ -115,10 +119,10 @@ for filename in "$@" ; do
 }
 EOF
 
-	if [ "$extension" = "pdf" ]; then
-		# Add content information
-		cat <<EOF >${tmpdir}/${uuid}.content
-{   
+    if [ "$extension" = "pdf" ]; then
+	# Add content information
+	cat <<EOF >${tmpdir}/${uuid}.content
+{
     "extraMetadata": {
     },
     "fileType": "pdf",
@@ -141,28 +145,30 @@ EOF
     }
 }
 EOF
-		# Add cache directory
-		mkdir ${tmpdir}/${uuid}.cache
 
-		# Add highlights directory
-		mkdir ${tmpdir}/${uuid}.highlights
+	# Add cache directory
+	mkdir ${tmpdir}/${uuid}.cache
 
-		# Add thumbnails directory
-		mkdir ${tmpdir}/${uuid}.thumbnails
+	# Add highlights directory
+	mkdir ${tmpdir}/${uuid}.highlights
 
-	elif [ "$extension" = "epub" ]; then
+	# Add thumbnails directory
+	mkdir ${tmpdir}/${uuid}.thumbnails
 
-		# Add content information
-		cat <<EOF >${tmpdir}/${uuid}.content
+    elif [ "$extension" = "epub" ]; then
+
+	# Add content information
+	cat <<EOF >${tmpdir}/${uuid}.content
 {
     "fileType": "epub"
 }
 EOF
-	else
-		echo "Unknown extension: $extension, skipping $filename"
-    rm -rf ${tmpdir}/*
-		continue
-	fi
+
+    else
+	echo "Unknown extension: $extension, skipping $filename"
+        rm -rf ${tmpdir}/*
+	continue
+    fi
 
     # Transfer files
     echo "Transferring $filename as $uuid"
