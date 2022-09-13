@@ -203,17 +203,17 @@ EOF
 
     else
 	echo "Unknown extension: $extension, skipping $filename"
-        rm -rf ${tmpdir}/*
+        rm -rf ${tmpdir:?}/*
 	continue
     fi
 
     # Transfer files
     log "Transferring $filename as $uuid"
     scp -r ${SCP_OPTIONS} ${tmpdir}/* "${TARGET_DIR}"
-    rm -rf ${tmpdir}/*
+    rm -rf ${tmpdir:?}/*
 done
 
-rm -rf ${tmpdir}
+rm -rf ${tmpdir:?}
 
 if [ $RESTART_XOCHITL -eq 1 ] ; then
     log "Restarting Xochitl..."
