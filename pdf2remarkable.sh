@@ -75,7 +75,7 @@ show_help ()
 {
     echo "Transfer PDF or EPUB document(s) to a reMarkable tablet."
     echo "See comments/documentation at start of script."
-    echo "usage: $(basename $0) [-q|--quiet| [-r|--toggle-restart] path-to-file [path-to-file]..."
+    echo "usage: $(basename $0) [-q|--quiet| [-r|--toggle-restart] [--uuids-file=<filename>] path-to-file [path-to-file]..."
 }
 
 # Check if we have something to do
@@ -89,6 +89,7 @@ RESTART_XOCHITL=${RESTART_XOCHITL_DEFAULT}
 
 BE_QUIET=0
 SCP_OPTIONS=
+UUIDS_FILE=
 
 # Print progess information
 log () {
@@ -117,6 +118,10 @@ while :; do
 	    else
 		RESTART_XOCHITL=0
 	    fi
+	    ;;
+	--uuids-file=?*)
+	    UUIDS_FILE=${1#*=}
+	    shift
 	    ;;
 	*)               # No more optional arguments 
 	    break  
@@ -214,6 +219,11 @@ EOF
     # Transfer files
     log "Transferring $filename as $uuid"
     scp -r ${SCP_OPTIONS} ${tmpdir}/* "${TARGET_DIR}"
+
+    # If successful, record the uuid to supplied file
+    [ $? -eq 0 ] && [ -n ${UUIDS_FILE} ] && echo "${uuid} ${filename}" >> ${UUIDS_FILE}
+
+    # Clean up
     rm -rf ${tmpdir:?}/*
 done
 
