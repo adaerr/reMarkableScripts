@@ -70,25 +70,58 @@ REMARKABLE_HOST=${REMARKABLE_HOST:-remarkable}
 REMARKABLE_XOCHITL_DIR=${REMARKABLE_XOCHITL_DIR:-.local/share/remarkable/xochitl/}
 TARGET_DIR="${REMARKABLE_HOST}:${REMARKABLE_XOCHITL_DIR}"
 
-# Check if we have something to do
-if [ $# -lt 1 ]; then
+# Function to show help
+show_help ()
+{
     echo "Transfer PDF or EPUB document(s) to a reMarkable tablet."
     echo "See comments/documentation at start of script."
-    echo "usage: $(basename $0) [ -r ] path-to-file [path-to-file]..."
+    echo "usage: $(basename $0) [-q|--quiet| [-r|--toggle-restart] path-to-file [path-to-file]..."
+}
+
+# Check if we have something to do
+if [ $# -lt 1 ]; then
+    show_help
     exit 1
 fi
 
 RESTART_XOCHITL_DEFAULT=${RESTART_XOCHITL_DEFAULT:-0}
 RESTART_XOCHITL=${RESTART_XOCHITL_DEFAULT}
-if [ "$1" = "-r" ] ; then
-    shift
-    if [ $RESTART_XOCHITL_DEFAULT -eq 0 ] ; then
-        echo Switching
-        RESTART_XOCHITL=1
-    else
-        RESTART_XOCHITL=0
+
+BE_QUIET=0
+SCP_OPTIONS=
+
+# Print progess information
+log () {
+    if  [ $BE_QUIET -eq 0 ]; then
+        echo "$@"
     fi
-fi
+}
+
+
+# Parse arguments
+while :; do
+    case $1 in
+	-q|--quiet)
+	    shift
+	    BE_QUIET=1
+	    SCP_OPTIONS="-q"
+	    ;;
+	-h|--help)
+	    show_help
+	    exit 0
+	    ;;
+	-r|--toggle-restart)
+	    shift
+	    if [ $RESTART_XOCHITL_DEFAULT -eq 0 ] ; then
+		RESTART_XOCHITL=1
+	    else
+		RESTART_XOCHITL=0
+	    fi
+	    ;;
+	*)               # No more optional arguments 
+	    break  
+    esac
+done
 
 # Create directory where we prepare the files as the reMarkable expects them
 tmpdir=$(mktemp -d)
@@ -175,15 +208,15 @@ EOF
     fi
 
     # Transfer files
-    echo "Transferring $filename as $uuid"
-    scp -r ${tmpdir}/* "${TARGET_DIR}"
+    log "Transferring $filename as $uuid"
+    scp -r ${SCP_OPTIONS} ${tmpdir}/* "${TARGET_DIR}"
     rm -rf ${tmpdir}/*
 done
 
 rm -rf ${tmpdir}
 
 if [ $RESTART_XOCHITL -eq 1 ] ; then
-    echo "Restarting Xochitl..."
+    log "Restarting Xochitl..."
     ssh ${REMARKABLE_HOST} "systemctl restart xochitl"
-    echo "Done."
+    log "Done."
 fi
