@@ -74,8 +74,12 @@ TARGET_DIR="${REMARKABLE_HOST}:${REMARKABLE_XOCHITL_DIR}"
 show_help ()
 {
     echo "Transfer PDF or EPUB document(s) to a reMarkable tablet."
-    echo "See comments/documentation at start of script."
-    echo "usage: $(basename $0) [-q|--quiet| [-r|--toggle-restart] [--uuids-file=<filename>] path-to-file [path-to-file]..."
+    echo "usage: $(basename $0) path-to-file [path-to-file]..."
+    echo "  -h  --help             print this usage information and exit"
+    echo "  -q  --quiet            don't print progress information"
+    echo "  -r  --toggle-restart   toggle whether to restart the tablet (default is given by RESTART_XOCHITL_DEFAULT)"
+    echo "      --uuids-file       write the list of uploaded files and their UUIDs to a file"
+    echo "See also comments/documentation at start of the script."
 }
 
 # Check if we have something to do
