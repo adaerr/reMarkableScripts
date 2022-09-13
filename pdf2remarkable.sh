@@ -125,6 +125,10 @@ done
 
 # Create directory where we prepare the files as the reMarkable expects them
 tmpdir=$(mktemp -d)
+if [ $? -ne 0 ]; then
+    echo "Cannot create a temporary directory. Exiting."
+    exit 1
+fi
 
 # Loop over the command line arguments,
 # which we expect are paths to the files to be transferred
