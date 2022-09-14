@@ -74,7 +74,7 @@ TARGET_DIR="${REMARKABLE_HOST}:${REMARKABLE_XOCHITL_DIR}"
 show_help ()
 {
     echo "Transfer PDF or EPUB document(s) to a reMarkable tablet."
-    echo "usage: $(basename $0) path-to-file [path-to-file]..."
+    echo "usage: $(basename $0) [options] path-to-file [path-to-file]..."
     echo "  -h  --help             print this usage information and exit"
     echo "  -q  --quiet            don't print progress information"
     echo "  -r  --toggle-restart   toggle whether to restart the tablet (default is given by RESTART_XOCHITL_DEFAULT)"
