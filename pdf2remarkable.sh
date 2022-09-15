@@ -225,7 +225,7 @@ EOF
     scp -r ${SCP_OPTIONS} ${tmpdir}/* "${TARGET_DIR}"
 
     # If successful, record the uuid to supplied file
-    [ $? -eq 0 ] && [ -n ${UUIDS_FILE} ] && echo "${uuid} ${filename}" >> ${UUIDS_FILE}
+    [ $? -eq 0 ] && [ -n "${UUIDS_FILE}" ] && echo "${uuid} ${filename}" >> ${UUIDS_FILE}
 
     # Clean up
     rm -rf ${tmpdir:?}/*
