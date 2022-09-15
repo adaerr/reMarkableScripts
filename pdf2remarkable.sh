@@ -70,28 +70,74 @@ REMARKABLE_HOST=${REMARKABLE_HOST:-remarkable}
 REMARKABLE_XOCHITL_DIR=${REMARKABLE_XOCHITL_DIR:-.local/share/remarkable/xochitl/}
 TARGET_DIR="${REMARKABLE_HOST}:${REMARKABLE_XOCHITL_DIR}"
 
+# Function to show help
+show_help ()
+{
+    echo "Transfer PDF or EPUB document(s) to a reMarkable tablet."
+    echo "usage: $(basename $0) [options] path-to-file [path-to-file]..."
+    echo "  -h  --help             print this usage information and exit"
+    echo "  -q  --quiet            don't print progress information"
+    echo "  -r  --toggle-restart   toggle whether to restart the tablet (default is given by RESTART_XOCHITL_DEFAULT)"
+    echo "      --uuids-file       write the list of uploaded files and their UUIDs to a file"
+    echo "See also comments/documentation at start of the script."
+}
+
 # Check if we have something to do
 if [ $# -lt 1 ]; then
-    echo "Transfer PDF or EPUB document(s) to a reMarkable tablet."
-    echo "See comments/documentation at start of script."
-    echo "usage: $(basename $0) [ -r ] path-to-file [path-to-file]..."
+    show_help
     exit 1
 fi
 
 RESTART_XOCHITL_DEFAULT=${RESTART_XOCHITL_DEFAULT:-0}
 RESTART_XOCHITL=${RESTART_XOCHITL_DEFAULT}
-if [ "$1" = "-r" ] ; then
-    shift
-    if [ $RESTART_XOCHITL_DEFAULT -eq 0 ] ; then
-        echo Switching
-        RESTART_XOCHITL=1
-    else
-        RESTART_XOCHITL=0
+
+BE_QUIET=0
+SCP_OPTIONS=
+UUIDS_FILE=
+
+# Print progess information
+log () {
+    if  [ $BE_QUIET -eq 0 ]; then
+        echo "$@"
     fi
-fi
+}
+
+
+# Parse arguments
+while :; do
+    case $1 in
+	-q|--quiet)
+	    shift
+	    BE_QUIET=1
+	    SCP_OPTIONS="-q"
+	    ;;
+	-h|--help)
+	    show_help
+	    exit 0
+	    ;;
+	-r|--toggle-restart)
+	    shift
+	    if [ $RESTART_XOCHITL_DEFAULT -eq 0 ] ; then
+		RESTART_XOCHITL=1
+	    else
+		RESTART_XOCHITL=0
+	    fi
+	    ;;
+	--uuids-file=?*)
+	    UUIDS_FILE=${1#*=}
+	    shift
+	    ;;
+	*)               # No more optional arguments 
+	    break  
+    esac
+done
 
 # Create directory where we prepare the files as the reMarkable expects them
 tmpdir=$(mktemp -d)
+if [ $? -ne 0 ]; then
+    echo "Cannot create a temporary directory. Exiting."
+    exit 1
+fi
 
 # Loop over the command line arguments,
 # which we expect are paths to the files to be transferred
@@ -170,20 +216,25 @@ EOF
 
     else
 	echo "Unknown extension: $extension, skipping $filename"
-        rm -rf ${tmpdir}/*
+        rm -rf ${tmpdir:?}/*
 	continue
     fi
 
     # Transfer files
-    echo "Transferring $filename as $uuid"
-    scp -r ${tmpdir}/* "${TARGET_DIR}"
-    rm -rf ${tmpdir}/*
+    log "Transferring $filename as $uuid"
+    scp -r ${SCP_OPTIONS} ${tmpdir}/* "${TARGET_DIR}"
+
+    # If successful, record the uuid to supplied file
+    [ $? -eq 0 ] && [ -n "${UUIDS_FILE}" ] && echo "${uuid} ${filename}" >> ${UUIDS_FILE}
+
+    # Clean up
+    rm -rf ${tmpdir:?}/*
 done
 
-rm -rf ${tmpdir}
+rm -rf ${tmpdir:?}
 
 if [ $RESTART_XOCHITL -eq 1 ] ; then
-    echo "Restarting Xochitl..."
+    log "Restarting Xochitl..."
     ssh ${REMARKABLE_HOST} "systemctl restart xochitl"
-    echo "Done."
+    log "Done."
 fi
